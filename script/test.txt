@@ -1,0 +1,11 @@
+# 约束代数 #
+# 约束结构声明
+{
+   	A{v:startA}
+	C1{c:link_cst1;f:dis_fun2(link_cst2.C.o)->0}	
+	C2{c:link_cst2;f:dis_fun(link_cst3.C.o)->0}	
+	C3{c:link_cst3;f:dis_fun('V(getvec3("mouse"))')->0}	
+}setup('cst');
+
+# 约束代数公式
+S = A*{<C1,C2,C3>};
