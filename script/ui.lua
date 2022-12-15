@@ -3,17 +3,16 @@
 -- Controls
 ----------------------------------------------
 function button1(x, y, label)
-	local w = 80
-	local h = 30
-
+	local w = 65
+	local h = 28
     local mx,my,mz= getvec3("mouse")
 	if(mx > x and mx < x + w and my > y and my < y + h) then
-		rect(x-3,y-3,86,36)
-		text(x + 20,y + 10, label .. "!")
+		rect(x-3,y-3,w + 6,h + 6)
+		text(x + 15,y + 10, label .. "!")
 		return true
 	end 
-	rect(x,y,80,30)
-	text(x + 20,y + 10, label)
+	rect(x,y,w,h)
+	text(x + 15,y + 10, label)
 	return false	
 end
 
@@ -94,7 +93,7 @@ function onGUI()
 		gui = 4
 		exit()
 	end
-	if button1(350, 360, "play") then
+	if button1(350, 400, "|->") then
 		gui = 18
 		play()
 		hit = true
@@ -102,9 +101,35 @@ function onGUI()
 	end
 	return hit
 end
+
+----------------------------------------------
+-- onmouse
+----------------------------------------------
 function onmouse()
 	local x,y,z = getvec3("mouse")
 	pix(x, y)
 	text(x, y - 20,'A')
 	arrow(x,y,x,y + 50);
+end
+
+----------------------------------------------
+-- play
+----------------------------------------------
+function onplay()
+	if count >= 1 and #veclist > 1 then
+		startA.o = veclist[1].o
+		coord1.o = veclist[1].o
+	end
+	if count >= 2 and #veclist > 2 then
+		coord2.o = veclist[2].o
+	end
+	if count >= 3 and #veclist > 3 then
+		coord3.o = veclist[3].o
+	end
+	count = 1
+	veclist = {}
+	hit = true
+	bshow = true
+	dophg("script/test.txt")
+	play()
 end

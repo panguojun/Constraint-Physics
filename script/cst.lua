@@ -6,12 +6,14 @@ require ("script/cstframe")
 ----------------------------------------------
 -- 常数与特征控制变量
 ----------------------------------------------
-targetP = V(0,0,0)
-
--- 粒子定义，暂时赋予它一个位置
--- 特征向量与坐标系结合，是形状
+-- 粒子定义，位置 + 向量（本质上是一阶空间向量 + 二阶空间向量）
 startA = {o=V(0,0,0),v=V(0,0,0)}
 veclist = {}
+
+-- 坐标系对象
+coord1 = {o=V(0,0,0),ux=V(1,0,0),uy=V(0,1,0)}
+coord2 = {o=V(0,0,0),ux=V(1,0,0),uy=V(0,1,0)}
+coord3 = {o=V(0,0,0),ux=V(1,0,0),uy=V(0,1,0)}
 
 ----------------------------------------------
 -- 坐标转换
@@ -47,9 +49,11 @@ end
 ----------------------------------------------
 -- 距离函数
 ----------------------------------------------
+-- 普通的两点距离公式
 dis_fun = function (cst,cd,cdtrans, vc,target)
 	return length(coord_mul(cst.transform(cst,vc), cd)-target)
 end
+-- 在自然坐标系下，目标点的投影跟固定点的距离
 dis_fun2 = function (cst,cd,cdtrans,vc,target)
 	local ccd = {o=cd.o,ux=cd.ux,uy=cd.uy}
 	local disw = dis_fun(cst,cd,cdtrans,vc,target.cd.o)
@@ -58,10 +62,6 @@ dis_fun2 = function (cst,cd,cdtrans,vc,target)
 		text(ccd.o.x, ccd.o.y, 'indis')
 		return 10000
 	end
-	--if(length(ccd.o,cst.cd0.o) > length(cst.cd0.o,target.cd.o))then
-	--	prt('out dis!')
-	--	return 10000
-	--end
 	if(false == cdtrans(vc,cst,ccd))then
 		return disw
 	end
@@ -69,11 +69,14 @@ dis_fun2 = function (cst,cd,cdtrans,vc,target)
 	local dis =  length(tgc - V(0, target.r, 0))
 	return dis
 end
+-- 沿半径方向的距离
 dis_radious = function (cst,cd,cdtrans,vc,target)
 	-- 位置距离
 	local pw = coord_mul(cst.transform(cst,vc), cd)
+	-- todo 需要投影
 	return length(pw-target)
 end
+-- 角度差
 dis_angle = function(cst,cd,cdtrans,vc,target)
 	-- 角度距离
 	local pw = coord_mul(cst.transform(cst,vc), cd)
@@ -84,14 +87,7 @@ dis_angle = function(cst,cd,cdtrans,vc,target)
 end
 
 ----------------------------------------------
--- 坐标系对象
-----------------------------------------------
-coord1 = {o=V(0,0,0),ux=V(1,0,0),uy=V(0,1,0)}
-coord2 = {o=V(0,0,0),ux=V(1,0,0),uy=V(0,1,0)}
-coord3 = {o=V(0,0,0),ux=V(1,0,0),uy=V(0,1,0)}
-
-----------------------------------------------
--- 约束类型定义
+-- 各种类型的约束定义
 ----------------------------------------------
 -- 杆对象(r,th)
 link_cst.transform = CF_link_p_1
@@ -100,7 +96,7 @@ link_cst.step = 5
 link_cst.steps = 20
 
 ----------------------------------------------
--- 杆对象(相切)
+-- 杆对象(与圆相切)
 link_cst_t = clone(link_cst)
 link_cst_t.angstep = 18
 link_cst_t.step = 1
@@ -115,7 +111,6 @@ link_cst_t.place = function(label,Vw,cst,cd)
 		drawCD(cd)
 		return {o=V(0, 0, 0),v=V(0, 0, 0)};
 	end
---参数移动
 link_cst_t.move = function(v, dir, cst)
 		if(dir == 1)then
 			return V(v.x+1,v.y,v.z);
@@ -126,13 +121,13 @@ link_cst_t.move = function(v, dir, cst)
 		end
 		return V(v.x,v.y,v.z);
 	end
--- 代表转化为形状
 link_cst_t.fly= function(v,cst,cd)
 		local vv= coord_mul(cst.transform(cst,v), cd)
 		dumpv("fly====================", vv)
 		arrow(cst.cd0.o.x,cst.cd0.o.y,vv.x,vv.y)-- 绘制
 		return {o=vv,v=V(0, 0, 0)}
 	end
+
 ----------------------------------------------
 -- 杆对象(r)
 link_cst_r = clone(link_cst)
@@ -153,11 +148,12 @@ link_cst_r.move = function(v, dir, cst)
 		end
 		return V(v.x,v.y,v.z);
 	end
+
 ----------------------------------------------
 -- 圆约束(th)
 link_cst_th = clone(link_cst)
-link_cst_th.r = 80
 link_cst_th.transform = CF_link_p_1
+link_cst_th.r = 80
 link_cst_th.steps = 50
 link_cst_th.angstep = 5
 link_cst_th.step = 1
@@ -183,24 +179,3 @@ link_cst_th.fly= function(v,cst,cd)
 		arrow(cst.cd0.o.x,cst.cd0.o.y,vv.x,vv.y)-- 绘制
 		return {o=vv,v=V(0, 0, 0)}
 	end
-----------------------------------------------
--- play
-----------------------------------------------
-function onplay()
-	if count >= 1 and #veclist > 1 then
-		startA.o = veclist[1].o
-		coord1.o = veclist[1].o
-	end
-	if count >= 2 and #veclist > 2 then
-		coord2.o = veclist[2].o
-	end
-	if count >= 3 and #veclist > 3 then
-		coord3.o = veclist[3].o
-	end
-	count = 1
-	veclist = {}
-	hit = true
-	bshow = true
-	dophg("script/test.txt")
-	play()
-end

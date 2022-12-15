@@ -2,9 +2,6 @@
 # 约束结构声明
 {
    	A{v:startA}
-	#C1{cs:link_cst_r;	cd:coord1,nil; f:dis_radious(coord2.o)->0}	
-	#C2{cs:link_cst_th;	cd:coord1,nil; f:dis_angle(coord2.o)->0}
-
 	C1{cs:link_cst_t;	gui:18;  cd:coord1,nc_1;f:dis_fun2(link_cst_th)->0}	
 	C2{cs:link_cst_th;	gui:18;  cd:coord2;		f:dis_angle(coord3.o)->0}	
 	C22{cs:link_cst_r;	gui:18;  cd:coord2;		f:dis_radious(coord3.o)->0}

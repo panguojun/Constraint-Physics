@@ -2,7 +2,9 @@
 -- 通用约束框架
 -- 约束的复杂性部分实现
 ----------------------------------------------
-text(280,200, "* Constaint Physics *")
+text(280,180, "* Constaint Physics *")
+text(280,250, "Let's beat AI on the face!")
+
 ----------------------------------------------
 require ("script/com")
 require ("script/featurevec")
@@ -13,7 +15,7 @@ require ("script/cst_fit")
 require ("script/ui")
 
 ----------------------------------------------
--- 约束的通用骨架
+-- link类约束的通用原型
 ----------------------------------------------
 link_cst = {
 	label = 'C',
@@ -26,24 +28,14 @@ link_cst = {
 	step = 1,
 	-- 角度步长
 	angstep = 5,
-	-- 代表转化为参数
+
+	-- 量度世界坐标系下的向量，转化为参数
 	place = function(label,Vw,cst,cd)
-		prt(label)
-		dumpv("place------------------", Vw)
-		psz(6)
-		pix(cd.o.x, cd.o.y)
-		text(cd.o.x, -20+cd.o.y, label)
-		psz(1)
-		return {o=V(0, 0, 0),v=V(0, 0, 0)};
+		dumpv(label .. " place------------------", Vw);
+		psz(6);pix(cd.o.x, cd.o.y)text(cd.o.x, -20+cd.o.y, label)psz(1)
+		return {o=V(0,0,0),v=V(0,0,0)};
 	end,
-	-- 代表转化为形状
-	fly= function(v,cst,cd)
-		local vv= coord_mul(cst.transform(cst,v), cd)
-		dumpv("fly====================", vv)
-		arrow(cd.o.x,cd.o.y,vv.x,vv.y)-- 绘制
-		return {o=vv,v=V(0, 0, 0)}
-	end,
-	--参数移动
+	--参数移动，如果可以合并，则使用线性运算，否则调用寻路函数完成
 	move = function(v, dir, cst)
 		if(dir == 1)then
 			return V(v.x+2,v.y,v.z);
@@ -53,13 +45,20 @@ link_cst = {
 			return V(v.x,v.y-1,v.z);
 		end
 		return V(v.x,v.y,v.z);
+	end,
+	-- 还原到世界坐标系，也是转化为形状的过程
+	fly= function(v,cst,cd)
+		local vv= coord_mul(cst.transform(cst,v), cd)
+		dumpv("fly====================", vv)
+		arrow(cd.o.x,cd.o.y,vv.x,vv.y)-- 绘制
+		return {o=vv,v=V(0, 0, 0)}
 	end
 }
 ----------------------------------------------
--- 把向量放在约束空间内
+-- 约束空间 <-> 世界空间
 ----------------------------------------------
 function world_cst(label, Vw, cst, cd)
-	if cst.gui ~= gui then
+	if Vw == nil or cst.gui ~= gui then
 		return nil
 	end
 	return cst.place(label,Vw.o, cst, cd)
@@ -94,7 +93,6 @@ function _grad(p, C, CD, cdtrans, d_fun, target)
 	-- 只有一个主方向
 	return normcopy(V(-dfx,-dfy,0)) * C.step
 end
-
 function _move(A, cst, cd, cdtrans, d_fun, target)
 	local p = A.o;
 	local pp = coord_mul(cst.transform(cst,p), cd);
@@ -116,10 +114,11 @@ function _move(A, cst, cd, cdtrans, d_fun, target)
 	return {o={x=p.x+g.x,y=p.y+g.y,z=p.z+g.z},v=A.v};
 end
 function move(A, CS, CD, cdtrans, d_fun,target)
-	lastpp = nil
 	if(A == nil)then
 		return nil
 	end
+
+	lastpp = nil
 	CS.cd0 = clone(CD)
 	local ta = A
 	for i = 0, CS.steps do
@@ -135,5 +134,6 @@ function move(A, CS, CD, cdtrans, d_fun,target)
 	local pp = coord_mul(CS.transform(CS,ta.o), CD);
 	text(pp.x, pp.y, 'failed')
 	prt("!failed!\n")
-	return ta
+
+	return nil
 end
