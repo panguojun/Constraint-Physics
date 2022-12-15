@@ -26,6 +26,8 @@ namespace constraint_algebra
 	{
 		string name;
 		string cs; // constaint name in lua
+		string cd; // coordnate name
+		string cdtrans = "nil"; // 坐标系本身的变换
 
 		// selection force
 		FUN_NAME d_f;
@@ -38,7 +40,7 @@ namespace constraint_algebra
 		// 把向量投影到约束空间内 V/C
 		void prj_vec(VEC& ov, const VEC& v)
 		{
-			dolua(ov + "= world_cst(" + v + "," + cs + ");");
+			dolua(ov + "= world_cst(\'" + name + "\'," + v + "," + cs + "," + cd + ");");
 		}
 		// 约束的导数/梯度，derivative
 		void der_cst(const CST& c)
@@ -50,9 +52,9 @@ namespace constraint_algebra
 		void mul_vec(const VEC& ov, const VEC& v) const
 		{
 			if (order == 1)// 把向量还原回世界空间 V * C
-				dolua(ov + "= cst_world(" + v + "," + cs + ")");
-			else if(order == 2)// 移动向量 V * C`
-				dolua(ov + "= move(" + v + "," + cs + "," + d_f + "," + d_params.front() + ")");
+				dolua(ov + "= cst_world(" + v + "," + cs + "," + cd + ")");
+			else if(order == 2)// 移动向量 V * C`,在全局下无法线性合并，故而需要使用MOVE函数
+				dolua(ov + "= move(" + v + "," + cs + "," + cd + "," + cdtrans + "," + d_f + "," + d_params.front() + ")");
 		}
 	};
 	std::map<string, lua_cst> cstmap;
@@ -139,13 +141,28 @@ namespace constraint_algebra
 			v.sval = it->second;
 		}
 		// constraint
-		CHEKCK_KEY("c")
+		CHEKCK_KEY("cs")
 		{
 			lua_cst c;
-			KEY_VAL("c")
+			KEY_VAL("cs")
 			{
 				c.name = tree->name;
 				c.cs = it->second;
+			}
+			KEY_VAL("gui")
+			{
+				// 关联CS gui
+				dolua(c.cs + ".gui = " + it->second);
+			}
+			KEY_VAL("cd")
+			{
+				vector<string> elem;
+				STR::split(it->second, elem, ",");
+				c.cd = elem.front();
+				if(elem.size() > 1)
+					c.cdtrans = elem.back();
+				// 关联CS CD
+				dolua(c.cs + ".cd = " + c.cd);
 			}
 			KEY_VAL("f")
 			{
@@ -154,6 +171,10 @@ namespace constraint_algebra
 				get_force(c.d_force, cd);
 				v.type = CONSTRAINT;
 				v.sval = tree->name;
+
+				// 关联CS target
+				dolua(c.cs + ".target = " + c.d_params.front());
+				
 			}
 			cstmap[tree->name] = c;
 		}
@@ -237,7 +258,7 @@ namespace constraint_algebra
 					cstmap[b.sval].mul_vec(c.sval, a.sval);
 				}
 				else if(a.type == VECTOR && b.type == CST_Q)
-				{
+				{// V*<C1,C2,C3>
 					PRINT("VECTOR * CST_Q")
 					string vname = a.sval + "_1";
 					c.type = VECTOR;
