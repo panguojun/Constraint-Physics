@@ -6,7 +6,6 @@ require ("script/cstframe")
 ----------------------------------------------
 -- 常数与特征控制变量
 ----------------------------------------------
-mindis = 8
 targetP = V(0,0,0)
 
 -- 粒子定义，暂时赋予它一个位置
@@ -22,45 +21,155 @@ function CF_link_p_1(C,p)
 	local ang = math.rad(p.y*C.angstep)
 	return V(p.x * math.cos(ang), p.x * math.sin(ang),0)
 end
-----------------------------------------------
--- 距离函数
-----------------------------------------------
-dis_fun = function (cst,vc,target)
-	return length(coord_mul(cst.transform(cst,vc), cst.C)-target)
-end
-dis_fun2 = function (cst,vc,target)
-	-- 位置距离
-	local pw = coord_mul(cst.transform(cst,vc), cst.C)
-	local pdis = math.abs(length(pw-target) - 80) -- C2.R
-	-- 方向距离
-	local pdir = normcopy(pw - cst.C.o)
-	local tdir = normcopy(pw - target)
-	local dis = math.abs(dot(pdir,tdir))*80
-	prt("pdis = " .. pdis .. " dis= " .. dis)
-	return dis + pdis
+function _CF_link_p_1(C,p)
+	local ang = math.deg(math.atan(p.y, p.x))/C.angstep
+	local r = length(p)
+	return V(r, ang, 0)
 end
 
 ----------------------------------------------
--- 约束对象定义
+-- 自然坐标系
 ----------------------------------------------
+-- 永远指向起点的自然坐标系
+function nc_1(vc,cst,cd)
+	local pw = coord_mul(cst.transform(cst,vc), cd)
+	if(length(pw - cd.o) > 0.5) then
+		cd.ux = normcopy(cst.cd0.o - pw)
+		cd.uy = V(-cd.ux.y,cd.ux.x,0)
+		cd.o = pw
+		--arrow(pw.x,pw.y,(pw + cd.ux*10).x,(pw +cd.ux*10).y)
+		--arrow(pw.x,pw.y,(pw + cd.uy*10).x,(pw +cd.uy*10).y)
+		return true
+	end
+	return false
+end
+
+----------------------------------------------
+-- 距离函数
+----------------------------------------------
+dis_fun = function (cst,cd,cdtrans, vc,target)
+	return length(coord_mul(cst.transform(cst,vc), cd)-target)
+end
+dis_fun2 = function (cst,cd,cdtrans,vc,target)
+	local ccd = {o=cd.o,ux=cd.ux,uy=cd.uy}
+	local disw = dis_fun(cst,cd,cdtrans,vc,target.cd.o)
+	if(disw + cst.mindis < target.r)then
+		prt('in dis!')
+		text(ccd.o.x, ccd.o.y, 'indis')
+		return 10000
+	end
+	--if(length(ccd.o,cst.cd0.o) > length(cst.cd0.o,target.cd.o))then
+	--	prt('out dis!')
+	--	return 10000
+	--end
+	if(false == cdtrans(vc,cst,ccd))then
+		return disw
+	end
+	local tgc = coord_div(target.cd.o,ccd)
+	local dis =  length(tgc - V(0, target.r, 0))
+	return dis
+end
+dis_radious = function (cst,cd,cdtrans,vc,target)
+	-- 位置距离
+	local pw = coord_mul(cst.transform(cst,vc), cd)
+	return length(pw-target)
+end
+dis_angle = function(cst,cd,cdtrans,vc,target)
+	-- 角度距离
+	local pw = coord_mul(cst.transform(cst,vc), cd)
+	local v1 = (target-cd.o)
+	local v2 = (pw-cd.o)
+	local ang = angleV2(normcopy(v1), normcopy(v2))
+	return math.abs(math.deg(ang))
+end
+
+----------------------------------------------
+-- 坐标系对象
+----------------------------------------------
+coord1 = {o=V(0,0,0),ux=V(1,0,0),uy=V(0,1,0)}
+coord2 = {o=V(0,0,0),ux=V(1,0,0),uy=V(0,1,0)}
+coord3 = {o=V(0,0,0),ux=V(1,0,0),uy=V(0,1,0)}
+
+----------------------------------------------
+-- 约束类型定义
+----------------------------------------------
+-- 杆对象(r,th)
 link_cst.transform = CF_link_p_1
 link_cst.angstep = 5
+link_cst.step = 5
+link_cst.steps = 20
+
 ----------------------------------------------
--- 杆对象
-link_cst1 = clone(link_cst)
-link_cst1.transform = CF_link_p_1
-link_cst1.label = 'C1'
-link_cst1.angstep = 1
-link_cst1.step = 10
-link_cst1.place = function(Vw,cst)
+-- 杆对象(相切)
+link_cst_t = clone(link_cst)
+link_cst_t.angstep = 18
+link_cst_t.step = 1
+link_cst_t.steps = 50
+link_cst_t.place = function(label,Vw,cst,cd)
+		prt(label)
 		dumpv("place------------------", Vw)
-		psz(6)
-		pix(cst.C.o.x, cst.C.o.y)
-		text(cst.C.o.x, -20+cst.C.o.y, 'C1')
-		psz(1)
-		return {o=V(100, 0, 0),v=V(0, 0, 0)};
+		psz(6);pix(cd.o.x, cd.o.y);text(cd.o.x, -20+cd.o.y, label);psz(1)
+		
+		cd.uy = normcopy(cst.cd.o - cst.target.cd.o)
+		cd.ux = V(cd.uy.y,-cd.uy.x,0)
+		drawCD(cd)
+		return {o=V(0, 0, 0),v=V(0, 0, 0)};
 	end
-link_cst1.move = function(v, dir)
+--参数移动
+link_cst_t.move = function(v, dir, cst)
+		if(dir == 1)then
+			return V(v.x+1,v.y,v.z);
+		elseif(dir == 2)then
+			return V(v.x,v.y+1,v.z);
+		elseif(dir == -2)then
+			return V(v.x,v.y-1,v.z);
+		end
+		return V(v.x,v.y,v.z);
+	end
+-- 代表转化为形状
+link_cst_t.fly= function(v,cst,cd)
+		local vv= coord_mul(cst.transform(cst,v), cd)
+		dumpv("fly====================", vv)
+		arrow(cst.cd0.o.x,cst.cd0.o.y,vv.x,vv.y)-- 绘制
+		return {o=vv,v=V(0, 0, 0)}
+	end
+----------------------------------------------
+-- 杆对象(r)
+link_cst_r = clone(link_cst)
+link_cst_r.transform = CF_link_p_1
+link_cst_r.angstep = 1
+link_cst_r.step = 10
+link_cst_r.steps = 50
+link_cst_r.mindis = 20
+link_cst_r.place = function(label,Vw,cst,cd)
+		local Vc = _CF_link_p_1(cst, coord_div(Vw, cd))
+		dumpv("placeC------------------", Vc)
+		psz(6);pix(cd.o.x, cd.o.y);text(cd.o.x, -28+cd.o.y, label);psz(1)
+		return {o=Vc,v=V(0, 0, 0)};
+	end
+link_cst_r.move = function(v, dir, cst)
+		if(dir == 1)then
+			return V(v.x+20,v.y,v.z);
+		end
+		return V(v.x,v.y,v.z);
+	end
+----------------------------------------------
+-- 圆约束(th)
+link_cst_th = clone(link_cst)
+link_cst_th.r = 80
+link_cst_th.transform = CF_link_p_1
+link_cst_th.steps = 50
+link_cst_th.angstep = 5
+link_cst_th.step = 1
+link_cst_th.mindis = 4
+link_cst_th.place = function(label,Vw,cst,cd)
+		local Vc = _CF_link_p_1(cst, coord_div(Vw, cd))
+		dumpv("place------------------", Vc)
+		psz(6);pix(cd.o.x, cd.o.y);text(cd.o.x, -20+cd.o.y, label);psz(1)
+		circle(cd.o.x,cd.o.y, cst.r)
+		return {o=Vc,v=V(0, 0, 0)};
+	end
+link_cst_th.move = function(v, dir, cst)
 		if(dir == 2)then
 			return V(v.x,v.y+1,v.z);
 		elseif(dir == -2)then
@@ -68,75 +177,30 @@ link_cst1.move = function(v, dir)
 		end
 		return V(v.x,v.y,v.z);
 	end
-link_cst1.dump = function(cst)
-		local v = V(100,0,0)
-		local vx = v
-		for y= 0, 80 do
-			vx = cst.move(vx, -2)
-			local vv= coord_mul(cst.transform(cst,vx), cst.C)
-			pset(vv.x,vv.y)
-		end
-		vx = v
-		for y= 0, 80 do
-			vx = cst.move(vx, 2)
-			local vv= coord_mul(cst.transform(cst,vx), cst.C)
-			pset(vv.x,vv.y)
-		end
-	end
-----------------------------------------------
--- 圆约束
-link_cst2 = clone(link_cst)
-link_cst2.transform = CF_link_p_1
-link_cst2.label = 'C2' 
-link_cst2.steps = 40
-link_cst2.angstep = 1
-link_cst2.step = 5
-link_cst2.place = function(Vw,cst)
-		dumpv("place------------------", Vw)
-		psz(6)
-		pix(cst.C.o.x, cst.C.o.y)
-		text(cst.C.o.x, -20+cst.C.o.y, 'C2')
-		psz(1)
-		return {o=V(80, 0, 0),v=V(0, 0, 0)};
-	end
-link_cst2.move = function(v, dir)
-	if(dir == 2)then
-		return V(v.x,v.y+1,v.z);
-	elseif(dir == -2)then
-		return V(v.x,v.y-1,v.z);
-	end
-	return V(v.x,v.y,v.z);
-end
-link_cst2.fly= function(v,cst)
-		local vv= coord_mul(cst.transform(cst,v), cst.C)
-		dumpv("fly====================", cst.C.o)
+link_cst_th.fly= function(v,cst,cd)
+		local vv= coord_mul(cst.transform(cst,v), cd)
+		dumpv("fly====================", cd.o)
+		arrow(cst.cd0.o.x,cst.cd0.o.y,vv.x,vv.y)-- 绘制
 		return {o=vv,v=V(0, 0, 0)}
 	end
-link_cst2.dump = function(cst)
-		local v = V(80,0,0)
-		local vx = v
-		for y= 0, 80 do
-			vx = cst.move(vx, -2)
-			local vv= coord_mul(cst.transform(cst,vx), cst.C)
-			pset(vv.x,vv.y)
-		end
-		vx = v
-		for y= 0, 80 do
-			vx = cst.move(vx, 2)
-			local vv= coord_mul(cst.transform(cst,vx), cst.C)
-			pset(vv.x,vv.y)
-		end
+----------------------------------------------
+-- play
+----------------------------------------------
+function onplay()
+	if count >= 1 and #veclist > 1 then
+		startA.o = veclist[1].o
+		coord1.o = veclist[1].o
 	end
-
-----------------------------------------------
--- 杆对象
-link_cst3 = clone(link_cst)
-link_cst3.label = 'C3'
-----------------------------------------------
--- dump
-----------------------------------------------
-function dump_cst()
-	link_cst1.dump(link_cst1)
-	link_cst2.dump(link_cst2)
-	link_cst3.dump(link_cst3)
+	if count >= 2 and #veclist > 2 then
+		coord2.o = veclist[2].o
+	end
+	if count >= 3 and #veclist > 3 then
+		coord3.o = veclist[3].o
+	end
+	count = 1
+	veclist = {}
+	hit = true
+	bshow = true
+	dophg("script/test.txt")
+	play()
 end

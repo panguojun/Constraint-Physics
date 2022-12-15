@@ -1,4 +1,7 @@
 PI = math.pi
+function prtstack()
+	prt(debug.traceback())
+end
 ------ lua ------
 function clone(object)
      local lookup_table = {}
@@ -152,14 +155,16 @@ ops.__mul=function(p, s)
 	return v
 end
 
-
 ----------------------------
 --			3D
 ----------------------------
 function dot(v1, v2)
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
 end
-
+-- 向量夹角
+function angleV2(v1,v2)
+	return math.acos(dot(v1,v2))
+end
 -- 向量叉乘
 function cross(v1, v2)
     return V(v1.y*v2.z - v2.y*v1.z, v2.x*v1.z-v1.x*v2.z, v1.x*v2.y-v2.x*v1.y)
@@ -186,11 +191,9 @@ function normcopy(v)
 	end
 	return V(0,0,0)
 end
-
 ----------------------------
 -- COORD
 ----------------------------
---COORD({o=V(55,0,0),ux=V(1,0,0),uy=V(0,1,0)})
 _coord_ops={}
 function COORD(v)
 	setmetatable(v, _coord_ops)
@@ -218,6 +221,17 @@ end
 coordgrad_mul=function(p, c)
 	return c.ux * p.x + c.uy * p.y
 end
+
+-- C`
+function der_transform(cst, v, dV)
+	return cst.transform(cst,v + dV) - cst.transform(cst,v)
+end
+
+function drawCD(cd)
+	arrow(cd.o.x,cd.o.y,(cd.o + cd.ux*50).x,(cd.o +cd.ux*50).y)
+	arrow(cd.o.x,cd.o.y,(cd.o + cd.uy*50).x,(cd.o +cd.uy*50).y)
+end
+
 ----------------------------
 --			File
 ----------------------------
@@ -318,21 +332,6 @@ function string_contains(str, item)
         end
     end
     return false
-end
-----------------------------
-formlist = {} -- UI Container
-----------------------------
-function addbutton(fm)
-	fm.x = 900 - #formlist * 150
-	fm.y = 0
-	table.insert(formlist,fm)
-end
-----------------------------
--- curve
-----------------------------
-curvedat = {}
-function addpt(_x, _y)
-	table.insert(curvedat, {x=_x, y=_y})
 end
 
 -- Lua table deep copy

@@ -2,10 +2,14 @@
 # 约束结构声明
 {
    	A{v:startA}
-	C1{c:link_cst1;f:dis_fun2(link_cst2.C.o)->0}	
-	C2{c:link_cst2;f:dis_fun(link_cst3.C.o)->0}	
-	C3{c:link_cst3;f:dis_fun('V(getvec3("mouse"))')->0}	
+	#C1{cs:link_cst_r;	cd:coord1,nil; f:dis_radious(coord2.o)->0}	
+	#C2{cs:link_cst_th;	cd:coord1,nil; f:dis_angle(coord2.o)->0}
+
+	C1{cs:link_cst_t;	gui:18;  cd:coord1,nc_1;f:dis_fun2(link_cst_th)->0}	
+	C2{cs:link_cst_th;	gui:18;  cd:coord2;		f:dis_angle(coord3.o)->0}	
+	C22{cs:link_cst_r;	gui:18;  cd:coord2;		f:dis_radious(coord3.o)->0}
+	C3{cs:link_cst;		gui:18;  cd:coord3;		f:dis_fun('V(800,0,0)')->0}	
 }setup('cst');
 
 # 约束代数公式
-S = A*{<C1,C2,C3>};
+S = A*{<C1,C2,C22,C3>};

@@ -1,4 +1,5 @@
 ----------------------------------------------
+-- GUI 跟逻辑深度结合
 -- Controls
 ----------------------------------------------
 function button1(x, y, label)
@@ -22,6 +23,10 @@ end
 count = 1
 bshow = true
 function onlbtn()
+	coord1 = {o=V(0,0,0),ux=V(1,0,0),uy=V(0,1,0)}
+	coord2 = {o=V(0,0,0),ux=V(1,0,0),uy=V(0,1,0)}
+	coord3 = {o=V(0,0,0),ux=V(1,0,0),uy=V(0,1,0)}
+
 	if onGUI() then
 		return
 	end
@@ -48,20 +53,29 @@ function onlbtn()
 end
 function onGUI()
 	local hit = false
-	if(button1(650, 50, "dump")) then
-		dump_cst()
-		dophg("script/test.txt")
+	gui = 0
+	if(button1(650, 50, "path")) then
+		--dump_cst()
+		--dophg("script/test.txt")
+		local a = veclist[1].o
+		local b = veclist[2].o
+		path(a,b)
 		hit = true
+		gui = 1
+		count = 1
+		veclist = {}
 	end
 	if(button1(650, 150, "reset")) then
+		gui = 2
 		if count >= 1 and #veclist > 1 then
-			link_cst1.C.o = veclist[1].o
+			startA.o = veclist[1].o
+			coord1.o = veclist[1].o
 		end
 		if count >= 2 and #veclist > 2 then
-			link_cst2.C.o = veclist[2].o
+			coord2.o = veclist[2].o
 		end
 		if count >= 3 and #veclist > 3 then
-			link_cst3.C.o = veclist[3].o
+			coord3.o = veclist[3].o
 		end
 		count = 1
 		veclist = {}
@@ -70,13 +84,21 @@ function onGUI()
 		dophg("script/test.txt")
 	end
 	if button1(650, 250, "clear") then
+		gui = 3
 		count = 1
 		veclist = {}
 		hit = true
 		bshow = false
 	end
 	if button1(650, 360, "exit") then
+		gui = 4
 		exit()
+	end
+	if button1(350, 360, "play") then
+		gui = 18
+		play()
+		hit = true
+		bshow = false
 	end
 	return hit
 end
