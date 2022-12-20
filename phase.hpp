@@ -11,45 +11,50 @@
 struct phase
 {
 	static const phase ONE;
-	number_math::complex cxn;
+	real angle;
 
 	phase() {}
-	phase(const phase& c)
+	phase(real _angle)
 	{
+		angle = _angle;
 	}
-	phase(real ang)
+	void rot(real _angle)
 	{
-	}
-	void rot(real ang)
-	{
+		angle = _angle;
 	}
 	phase operator + (const phase& c) const
 	{
 		phase rc;
+		rc.angle = angle + c.angle;
 		return rc;
 	}
 	phase operator - (const phase& c) const
 	{
 		phase rc;
+		rc.angle = angle - c.angle;
 		return rc;
 	}
 	// 在坐标系下定义一个向量
 	friend vec2 operator * (crvec2 p, const phase& c)
 	{
-		return p;
+		number_math::complex cx(1, c.angle);
+		return p * cx.x;
 	}
 	phase operator * (const phase& c) const
 	{
 		phase rc;
+		rc.angle = angle + c.angle;
 		return rc;
 	}
 	friend vec2 operator / (crvec2 p, const phase& c)
 	{
-		return p;
+		number_math::complex cx(1, -c.angle);
+		return p * cx.x;
 	}
 	phase operator / (const phase& c) const
 	{
 		phase rc;
+		rc.angle = angle - c.angle;
 		return rc;
 	}
 	void reverse()
@@ -64,12 +69,9 @@ struct phase
 	{
 		return c1.reversed() * c2;
 	}
-	real dot(crvec2 v) const
-	{
-		return 0;
-	}
 	void dump() const
 	{
+		PRINTV(angle);
 	}
 };
 const phase phase::ONE = phase();

@@ -7,8 +7,8 @@
 // *****************************************************************/
 struct ASTAR
 {
-	static const int SIZEX = IMAGESCALE;
-	static const int SIZEY = IMAGESCALE;
+	static const int SIZEX = 128;
+	static const int SIZEY = 64;
 
 	const int MAX_RAD = 150;		// 最大辐射阈值
 	real blendfactor = 0.5;		// 场与距离H函数的混合值
@@ -106,8 +106,7 @@ struct ASTAR
 		}
 		return minpos;
 	}
-	vector<pointn> movedirs =
-	{
+	vector<pointn> movedirs = {
 		pointn(0, 1),
 		pointn(0, -1),
 		pointn(1, 0),
@@ -128,9 +127,7 @@ struct ASTAR
 			work_node = node;
 			return false;
 		}
-
 		//PSET(node.p[0], node.p[1], 1, 0xFFFFFFFF);
-		//PRINTV(node.p[0])PRINTV(node.p[1])
 
 		if (getdis(node.p, B) < 1)
 		{
@@ -181,8 +178,6 @@ struct ASTAR
 		else
 		{
 			static node_t best; best = openlist[bestind];
-			//pointi(best.p.x, best.p.y, 1, 0xFF808080);
-			PSET(best.p[0], best.p[1], 1, 0xFFFFFFFF);
 
 			openlist.erase(openlist.begin() + bestind);
 			closelist.push_back(best);
@@ -190,10 +185,18 @@ struct ASTAR
 			return path(best, B, depth + 1); // 尾部优化
 		}
 	}
-
+	void showscene()
+	{
+		for (int i = 0; i < SIZEX; i ++)
+		for (int j = 0; j < SIZEY; j ++)
+		{
+			PSET6(i, j, 1, 0xFFFFFFFF);
+		}
+	}
 	void findpath(const pointn& a, const pointn& b)
 	{
 		PRINT("-----------findpath------------");
+
 		hismap.clear();
 		node_t A;
 		A.p = a;
@@ -201,11 +204,13 @@ struct ASTAR
 		A.g_field = 0;
 		A.h = getH(A.p, b);
 		A.h_field = getH_field(A.p, b);
-		//point(A.p, 4, 0xFF00FF00);
+		//point(A.p, 4, 0xFF00FFFF);
+		Window::draw_circle(A.p[0] * 6, A.p[1] * 6, 8, { 255,255,255,255 });
 
 		node_t B;
 		B.p = b;
 		//point(B.p, 4, 0xFF00FFFF);
+		Window::draw_circle(B.p[0] * 6, B.p[1] * 6, 8, { 255,255,255,255 });
 
 		openlist.clear();
 		closelist.clear();
@@ -220,6 +225,8 @@ struct ASTAR
 				while (closelist[it].parent != -1)
 				{
 					//pointi(closelist[it].p.x, closelist[it].p.y, 1, 0xFF00ff00);
+					Window::draw_circle(closelist[it].p[0] * 6, closelist[it].p[1] * 6, 2, { 255,255,255,255 });
+					
 					bestway.push_back(closelist[it].p);
 					it = closelist[it].parent;
 				}
