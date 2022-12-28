@@ -19,7 +19,6 @@ link_cst = {
 	step = 1,
 	-- 角度步长
 	angstep = 5,
-
 	-- 量度世界坐标系下的向量，转化为参数
 	place = function(label,Vw,cst,cd)
 		dumpv(label .. " place------------------", Vw);
@@ -105,7 +104,6 @@ function move(A, CS, CD, cdtrans, d_fun,target)
 	if(A == nil)then
 		return nil
 	end
-
 	lastpp = nil
 	CS.cd0 = clone(CD)
 	local ta = A
@@ -118,7 +116,6 @@ function move(A, CS, CD, cdtrans, d_fun,target)
 		end
 		ta = ta2
 	end
-
 	local pp = coord_mul(CS.transform(CS,ta.o), CD);
 	text2(pp.x, pp.y, 'failed')
 	prt("!failed!\n")

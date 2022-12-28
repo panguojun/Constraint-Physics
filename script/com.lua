@@ -179,7 +179,9 @@ end
 function length(v)
     return math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
 end
-
+function dis(p1, p2)
+    return length(p1-p2)
+end
 -- 向量norm
 function norm(v)
 	local r = length(v)
