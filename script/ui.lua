@@ -19,7 +19,23 @@ function button(x, y, label)
 	text(x + 15,y + 10, label)
 	return false
 end
-
+function button_big(x, y, label)
+	local w = 100
+	local h = 38
+    local mx,my,mz= getvec3("mouse")
+	if(mx > x and mx < x + w and my > y and my < y + h) then
+		rgb(138,138,158)
+		rect(x-3,y-3,w + 6,h + 6)
+		rgb(255,255,0)
+		text(x + 15,y + 10, label .. "!")
+		return true
+	end 
+	rgb(28,28,58)
+	rect(x,y,w,h)
+	rgb(255,255,0)
+	text(x + 15,y + 10, label)
+	return false
+end
 ----------------------------------------------
 -- UI
 ----------------------------------------------
